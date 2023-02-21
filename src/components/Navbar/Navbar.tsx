@@ -2,12 +2,6 @@ import React from 'react';
 import RightContent from './RightContent/RightContent';
 import SearchInput from './SearchInput';
 
-
-/* Navbar에는 type이 필요 없기 때문에 삭제 
-type NavbarProps = {
-    
-}; */
-
 const Navbar = () => {
     
     return (
@@ -19,7 +13,7 @@ const Navbar = () => {
                 <div className="flex-auto px-8">
                     <SearchInput />
                 </div>
-                <div className="flex-auto">
+                <div className="flex justify-self-end">
                     <RightContent />
                 </div>
                 
