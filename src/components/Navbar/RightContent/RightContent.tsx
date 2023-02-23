@@ -1,4 +1,5 @@
 import React from 'react';
+import AuthModal from 'src/components/Modal/Auth/AuthModal';
 import AuthButton from './AuthButton';
 
 type RightContentProps = {
@@ -10,7 +11,7 @@ const RightContent:React.FC<RightContentProps> = () => {
     return (
         <>
         <div>
-            {/* <AuthModal /> */}
+            <AuthModal />
         </div>
         <div>
             <AuthButton />
