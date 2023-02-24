@@ -10,7 +10,7 @@ const LoginForm:React.FC = () => {
         event.preventDefault();
         console.log("email", email.value);
         console.log("password", password.value);
-    };
+    }; // ???
 
     return (
         <form onSubmit={submitForm}>
