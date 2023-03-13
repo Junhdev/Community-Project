@@ -1,19 +1,39 @@
-import React from "react";
+import React, { FormEvent, useState } from "react";
 import useInput from "@/src/hooks/useInput";
 import { useSetRecoilState } from "recoil";
 import { authModalState } from "@/src/atoms/authModalAtom";
+import { useRouter } from "next/router";
+import axios from "axios";
 
 
 const LoginForm:React.FC = () => {
     const email = useInput("");
     const password = useInput("");
     const setAuthModalState = useSetRecoilState(authModalState);
+    let router = useRouter();
+    const [errors, setErrors] = useState<any>({});
 
-    const submitForm = (event) => {
-        event.preventDefault();
-        console.log("email", email.value);
-        console.log("password", password.value);
-    }; // ???
+
+    const submitForm = async (event: FormEvent) => {
+        /* refresh 방지 */
+        event.preventDefault(); 
+        /* console.log("email", email.value);
+        console.log("password", password.value); */
+        try {
+            const res = await axios.post('/auth/login',
+                { 
+                    email,
+                    password,
+                },
+                {
+                    withCredentials: true,
+                }
+            );
+        } catch(error) {
+            console.error(error);
+            setErrors(error?.response?.data || {});
+        }
+    }; 
 
     return (
         <form onSubmit={submitForm}>
