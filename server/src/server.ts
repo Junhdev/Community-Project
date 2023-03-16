@@ -1,14 +1,19 @@
 /* entry 파일 */
 import express from "express";
+import cors from 'cors';
 import morgan from "morgan";
 import { AppDataSource } from "./data-source";
 import authRoutes from './routes/auth';
 
-
 const app = express();
-const cors = require('cors');
 
-app.use(cors());
+const origin = process.env.ORIGIN;
+app.use(cors({
+    origin,
+    credentials: true
+}))
+
+
 /* for body-parsing application/json */
 app.use(express.json());
 /* HTTP 요청에 대한 log를 남겨주는 미들웨어 */
