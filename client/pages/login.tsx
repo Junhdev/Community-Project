@@ -14,7 +14,8 @@ const Login = () => {
     const { authenticated } = useAuthState();
     const dispatch = useAuthDispatch();
     
-    
+    // 이미 인증이 되어 있는 user(로그인 되어 있는 user)일 때, 즉 authenticated === true 일때 '/'로 redirect
+    if (authenticated) router.push("/");
 
 
     const handleSubmit = async (event: FormEvent) => { 
