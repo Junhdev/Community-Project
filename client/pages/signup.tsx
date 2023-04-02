@@ -1,4 +1,5 @@
 import InputGroup from '@/src/components/InputGroup';
+import { useAuthState } from '@/src/context/auth';
 
 import axios from 'axios';
 import Link from 'next/link'
@@ -8,14 +9,14 @@ import React, { FormEvent, useState } from 'react'
 
 
 const SignUp = () => {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [username, setUsername] = useState("");
     const [errors, setErrors] = useState<any>({});
-    
+    const { authenticated } = useAuthState();
 
-    const router = useRouter();
-   
+    if (authenticated) router.push("/");
     
 
     
@@ -43,6 +44,8 @@ const SignUp = () => {
                 username
             })
             console.log(res);
+            // 회원가입 완료 후 login 페이지로 이동
+            router.push("/login");
         } catch (error: any) {
             console.log('error', error);
             setErrors(error.response.data || {});
