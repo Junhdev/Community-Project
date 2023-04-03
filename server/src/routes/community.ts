@@ -17,7 +17,7 @@ const createCommunity = async (req: Request, res: Response, next) => {
     
         const community = await AppDataSource.getRepository(Community)
         .createQueryBuilder("community")
-        .where("lower(sub.name) = :name", { name: name.toLowerCase() })
+        .where("lower(community.name) = :name", { name: name.toLowerCase() })
         .getOne();
     
         if (community) errors.name = "커뮤니티명이 이미 존재합니다.";
@@ -56,7 +56,7 @@ const createCommunity = async (req: Request, res: Response, next) => {
 
 const router = Router();
 
-// community페이지에 접속 시 userMiddleware와 authMiddleware 호출 후 createCommunity 핸들러가 호출됨
+// '/'주소로 req 들어올 시 userMiddleware와 authMiddleware 호출 후 createCommunity 핸들러가 호출됨
 router.post("/", userMiddleware, authMiddleware, createCommunity);
 
 export default router;
