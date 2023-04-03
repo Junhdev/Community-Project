@@ -18,6 +18,8 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 
         // 유저 정보를 res.local.user에 넣어주기
         res.locals.user = user;
+        // next를 return해주어야 middleware가 계속 진행됨
+        return next();
 
          // 유저 정보가 있다면 community 이름과 제목이 이미 존재하는 지 여부 체크
 
