@@ -6,6 +6,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
 
+import userMiddleware from "../middlewares/user";
+import authMiddleware from "../middlewares/auth";
+
 
 
 /* SignUp.tsx 에서 보내준 res가 req에 들어있음 */
@@ -111,10 +114,35 @@ const login = async (req: Request, res: Response) => {
   }
 };
 
+// ②핸들러 호출 되면 res에 정보 담아 getServerSideProps로 res전달
+const me = async (_: Request, res: Response) => {
+  return res.json(res.locals.user);
+};
+
+const logout = async (_: Request, res: Response) => {
+  res.set(
+    "Set-Cookie",
+    cookie.serialize("token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      // 바로 expires 될 수 있게 Date인자로 0을 입력
+      expires: new Date(0),
+      path: "/",
+    })
+  );
+  res.status(200).json({ success: true });
+};
+
 // api 생성
 const router = Router();
+
+// ①쿠키가 있다면 /me에서 req 받은 후 그 쿠키(req)를 이용해서 middlewares 거친 후 me핸들러 호출
+router.get("/me", userMiddleware, authMiddleware, me)
 router.post("/signup", signup);
 router.post("/login", login);
+// 로그인 된 user만이 로그아웃을 할 수 있기 때문에 middleware를 거친 후(로그인 여부 체크) logout핸들러를 호출해야함
+router.post("/logout", userMiddleware, authMiddleware, logout);
 
 
 
