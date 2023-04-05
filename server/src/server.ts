@@ -3,7 +3,7 @@ import cors from 'cors';
 import morgan from "morgan";
 import { AppDataSource } from "./data-source";
 import authRoutes from './routes/auth';
-import communityRoutes from './routes/community';
+import communityRoutes from './routes/communities';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 
@@ -28,7 +28,7 @@ dotenv.config();
 app.get("/", (_, res) => res.send("running"));
 // 라우터 사용
 app.use("/api/auth", authRoutes);
-app.use("/api/community", communityRoutes);
+app.use("/api/communities", communityRoutes);
 
 
 app.use(express.static("public"));
