@@ -4,7 +4,8 @@ import { User } from "../entities/User";
 export default async (req: Request, res: Response, next: NextFunction) => {
     try {
     const user: User | undefined = res.locals.user;
-
+    
+    // user정보가 없을때 & 로그아웃시에도 throw Error
     if (!user) throw new Error("Unauthenticated");
 
     return next();
