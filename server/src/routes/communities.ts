@@ -78,13 +78,29 @@ const topCommunities = async (req: Request, res: Response) => {
     }
 };
 
+
+const getCommunity = async (req: Request, res: Response) => {
+    // req.params { name: 'test1' }
+    const name = req.params.name;
+    try {
+        const community = await Community.findOneByOrFail({ name });
+
+      // 포스트를 생성한 후에 해당 sub에 속하는 포스트 정보들을 넣어주기
+        
+        // 프론트에 전송
+        return res.json(community);
+    } catch (error) {
+        return res.status(404).json({ error: "커뮤니티를 찾을 수 없습니다." });
+    }
+};
+
 const router = Router();
 
 // '/'주소로 req 들어올 시 userMiddleware와 authMiddleware 호출 후 createCommunity 핸들러가 호출됨
 router.post("/", userMiddleware, authMiddleware, createCommunity);
 // 비회원 user들도 커뮤니티 페이지 접근 가능
 router.get("/community/topCommunities", topCommunities);
-
+// authMiddleware는 왜 x?
 router.get("/:name", userMiddleware, getCommunity);
 
 export default router;
