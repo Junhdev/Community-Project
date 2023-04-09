@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import userMiddleware from '../middlewares/user';
 import authMiddleware from '../middlewares/auth';
 import { AppDataSource } from "../data-source";
@@ -6,6 +6,9 @@ import { isEmpty } from "class-validator";
 import Community from "../entities/Community";
 import { User } from "../entities/User";
 import Post from "../entities/Post";
+import multer, { FileFilterCallback } from "multer";
+import path from "path";
+import { makeId } from "../utils/helpers";
 
 // 커뮤니티 유효성 & 생성 핸들러
 const createCommunity = async (req: Request, res: Response, next) => {
@@ -94,6 +97,49 @@ const getCommunity = async (req: Request, res: Response) => {
     }
 };
 
+// 로그인한 유저가 생성한 커뮤니티인지 확인하기 위한 핸들러
+const myCommunity = async (req: Request, res: Response, next: NextFunction) => {
+    // 현재 로그인되어 있는 유저
+    const user: User = res.locals.user;
+    try {
+        const community = await Community.findOneOrFail({ where: { name: req.params.name } });
+        
+        if (community.username !== user.username) {
+            return res
+            .status(403)
+            .json({ error: "이 커뮤니티를 소유하고 있지 않습니다." });
+        }
+
+        res.locals.community = community;
+        next();
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: " 문제가 발생했습니다." });
+    }
+};
+
+
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: "public/images",
+        // 저장되는 파일 이름 생성
+        filename: (_, file, callback) => {
+            const name = makeId(10);
+            // 이미지명 + .png
+            // 프론트에서 file 생성 해주었음
+            callback(null, name + path.extname(file.originalname));
+        },
+    }),
+    fileFilter: (_, file: any, callback: FileFilterCallback) => {
+        if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+            callback(null, true);
+        } else {
+            callback(new Error("이미지가 아닙니다."));
+        }
+    },
+});
+
+
 const router = Router();
 
 // '/'주소로 req 들어올 시 userMiddleware와 authMiddleware 호출 후 createCommunity 핸들러가 호출됨
@@ -103,4 +149,12 @@ router.get("/community/topCommunities", topCommunities);
 // authMiddleware는 왜 x?
 router.get("/:name", userMiddleware, getCommunity);
 
+router.post(
+    "/:name/upload",
+    userMiddleware,
+    authMiddleware,
+    myCommunity,
+    upload.single("file"),
+    uploadSubImage
+  );
 export default router;
