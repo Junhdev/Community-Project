@@ -12,6 +12,7 @@ export default abstract class Entity extends BaseEntity {
     @UpdateDateColumn()
     updatedAt: Date;
 
+    // 프론트에서 imageUrl과 bannerUrl을 가져올 수 있게 함
     toJSON() {
         return instanceToPlain(this);
       }
