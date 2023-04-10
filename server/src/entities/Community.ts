@@ -44,12 +44,12 @@ export default class Community extends BaseEntity{
     /* class-transformer 사용 */
     @Expose()
     get imageUrl(): string {
-        return this.imageUrn ? '${process.env.APP_URL}/images/${this.imageUrn}' : "https://www.gravatar.com/avatar?d=mp&f=y"; // false === 기본 image
+        return this.imageUrn ? `${process.env.APP_URL}/images/${this.imageUrn}` : "https://www.gravatar.com/avatar?d=mp&f=y"; // false === 기본 image
     }
 
     @Expose()
     get bannerUrl(): string | undefined { // false일때 type은 undefined 이므로 union type으로 지정
-        return this.bannerUrn ? '${process.env.APP_URL}/images/${this.bannerUrn}' : undefined;
+        return this.bannerUrn ? `${process.env.APP_URL}/images/${this.bannerUrn}` : undefined;
     }
     
 }
