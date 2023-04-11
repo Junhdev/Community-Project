@@ -9,9 +9,12 @@ import cookieParser from 'cookie-parser';
 
 const app = express();
 
+dotenv.config();
+
 // 서로 다른 ORIGIN에서 cookie에 token 저장을 위해 백엔드에서 credentials: true 설정 필요
+const origin = process.env.ORIGIN;
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin,
     credentials: true,
     optionsSuccessStatus: 200
 }))
@@ -23,20 +26,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(cookieParser());
 
-dotenv.config();
 
 app.get("/", (_, res) => res.send("running"));
 // 라우터 사용
 app.use("/api/auth", authRoutes);
 app.use("/api/communities", communityRoutes);
 
-
+// static파일을 public 파일 안에 있고 브라우저로 접근할 때 제공할 수 있게 해줌
 app.use(express.static("public"));
 
 
 let port = 4000;
 app.listen(port, async () => {
-    console.log('server running at http://localhost:4000');
+    console.log(`server running at ${process.env.APP_URL}`);
 
     AppDataSource.initialize().then(() => {
         console.log("database initialized");
