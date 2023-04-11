@@ -90,8 +90,18 @@ const getCommunity = async (req: Request, res: Response) => {
     try {
         const community = await Community.findOneByOrFail({ name });
 
-      // 포스트를 생성한 후에 해당 sub에 속하는 포스트 정보들을 넣어주기
+        // 포스트를 생성한 후에 해당 community에 속하는 포스트 정보들을 넣어주기
+        const posts = await Post.find({
+            where: { communityname: community.name },
+            order: { createdAt: "DESC"},
+            relations: ["comment", "votes"]
+        })
         
+        community.posts = posts;
+
+        if (res.locals.user) {
+            community.posts.forEach((p) => p.setUserVote(res.locals.user));
+        }
         // 프론트에 전송
         return res.json(community);
     } catch (error) {
