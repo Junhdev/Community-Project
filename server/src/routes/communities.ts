@@ -83,25 +83,26 @@ const topCommunities = async (req: Request, res: Response) => {
     }
 };
 
-
+// 현재 커뮤니티의 정보 불러오는 핸들러
 const getCommunity = async (req: Request, res: Response) => {
     // req.params { name: 'test1' }
     const name = req.params.name;
     try {
+        // 현재 접속해있는 community객체 할당
         const community = await Community.findOneByOrFail({ name });
 
         // 포스트를 생성한 후에 해당 community에 속하는 포스트 정보들을 넣어주기
+        // 즉, 현재 접속해있는 community 객체(table)에서 생성한 posts들 찾아서 할당
         const posts = await Post.find({
+            // communityname은 Post Entity의 column
             where: { communityname: community.name },
             order: { createdAt: "DESC"},
-            relations: ["comment", "votes"]
+            relations: ["comments", "votes"]
         })
-        
+        // 위에서 할당한 posts들 community객체에 넣어주기
         community.posts = posts;
 
-        if (res.locals.user) {
-            community.posts.forEach((p) => p.setUserVote(res.locals.user));
-        }
+        
         // 프론트에 전송
         return res.json(community);
     } catch (error) {
