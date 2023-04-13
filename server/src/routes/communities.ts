@@ -11,9 +11,31 @@ import path from "path";
 import { makeId } from "../utils/helpers";
 import { unlinkSync } from "fs";
 
+// 카테고리 선택 핸들러
+const selectCategory = async (req: Request, res: Response, next) => {
+    const { category } = req.body;     
+    try {
+        
+        // 인스턴스 생성
+        const community = new Community();
+        
+        community.category = category;
+        
+        // database에 저장
+        await community.save();
+
+        // 저장한 정보 프론트엔드로 전달
+        return res.json(community);
+        } catch (error) {
+            console.log(error);
+            return res.status(500).json({ error: "문제가 발생했습니다2." });
+        }    
+    
+}
+
 // 커뮤니티 유효성 & 생성 핸들러
 const createCommunity = async (req: Request, res: Response, next) => {
-    const { name, title, description } = req.body;
+    const { category, name, title, description } = req.body;
 
     // user정보가 있다면 community의 이름과 제목이 Community 엔티티에 이미 존재 하는 지 여부 체크
     try {
@@ -43,6 +65,7 @@ const createCommunity = async (req: Request, res: Response, next) => {
         const user: User = res.locals.user;
         
         const community = new Community();
+        community.category = category;
         community.name = name;
         community.description = description;
         community.title = title;
@@ -202,7 +225,7 @@ const uploadCommunityImage = async (req: Request, res: Response) => {
 
 
 const router = Router();
-
+router.post("/category", userMiddleware, authMiddleware, selectCategory);
 // '/'주소로 req 들어올 시 userMiddleware와 authMiddleware 호출 후 createCommunity 핸들러가 호출됨
 router.post("/", userMiddleware, authMiddleware, createCommunity);
 // 비회원 user들도 커뮤니티 페이지 접근 가능
