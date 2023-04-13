@@ -7,13 +7,17 @@ import { Expose } from "class-transformer";
 @Entity("communities")
 export default class Community extends BaseEntity{
 
+    
+    @Column({ nullable: true })
+    category: string;
+
     /* 커뮤니티명 column */
     @Index()
-    @Column({ unique: true })
+    @Column({ unique: true, nullable: true  })
     name: string;
 
     /* 커뮤니티 제목 column */
-    @Column()
+    @Column({nullable: true })
     title: string;
 
     /* 커뮤니티 desc column */
@@ -29,7 +33,7 @@ export default class Community extends BaseEntity{
     bannerUrn: string;
 
     /* 커뮤니티에 속해있는 user column (FK?) */
-    @Column()
+    @Column({ nullable: true })
     username: string;
 
     /* 여러개의 Community에는 각각의 User가 존재 */
