@@ -1,18 +1,16 @@
-import axios from "axios";
 import { useRouter } from "next/router";
 import { FormEvent, useState } from "react";
+import { useRecoilState } from "recoil";
+import { recoilCategoryItem } from "@/src/atoms/categoryAtom";
 
 
 const SelectCategory = () => {
-    // handle 특정카테고리 클릭하면 데이터베이스에 저장 category post요청
-    // Router.push /create로 이동 
-    const [category, setCategory] = useState("");
+    const [recoilCategory, setRecoilCategory] = useRecoilState(recoilCategoryItem);
+   
     const categoryList = [
         {
           name: "카테고리1",
-          
-          
-          
+
         },
         {
             name: "카테고리2",
@@ -27,12 +25,11 @@ const SelectCategory = () => {
     const [errors, setErrors] = useState<any>({});
     let router = useRouter();
     
+    /* TypeError: Cannot read properties of undefined (reading 'toLowerCase') 때문에 axios로 데이터 전달은 해주면 안된다(createCommunity 핸들러에서 name관련 로직 진행안되면 error 발생시키므로! (여기서는 name데이터를 전달할 수 없다)) */
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
-
+        // 제출 성공시 try내부 코드 실행
         try {
-            const res = await axios.post("/communities/category", { category });
-
             router.push('/communities/create');
         } catch (error: any) {
             console.log(error);
@@ -45,7 +42,7 @@ const SelectCategory = () => {
     {categoryList.map((a,i)=>(
                 <div key={i}>
                     <form onSubmit={handleSubmit}>
-                    <button onClick={()=>{setCategory(a.name)}}>카테고리명: {a.name}</button>
+                    <button onClick={()=>{setRecoilCategory([a.name])}}>카테고리명: {a.name}</button>
                     </form>
                 </div>
             ))}
