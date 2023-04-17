@@ -4,6 +4,8 @@ import morgan from "morgan";
 import { AppDataSource } from "./data-source";
 import authRoutes from './routes/auth';
 import communityRoutes from './routes/communities';
+import postRoutes from './routes/posts';
+import likeRoutes from './routes/likes';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 
@@ -28,9 +30,11 @@ app.use(cookieParser());
 
 
 app.get("/", (_, res) => res.send("running"));
-// 라우터 사용
+// 해당 경로로 접근하면 해당 Routes로 이동
 app.use("/api/auth", authRoutes);
 app.use("/api/communities", communityRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/likes", likeRoutes);
 
 // static파일을 public 파일 안에 있고 브라우저로 접근할 때 제공할 수 있게 해줌
 app.use(express.static("public"));
