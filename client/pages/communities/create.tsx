@@ -3,9 +3,15 @@ import axios from 'axios';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import React, { FormEvent, useState } from 'react'
+import { useRecoilState } from 'recoil';
+import { recoilCategoryItem } from '@/src/atoms/categoryAtom';
 
 
-const CommunityCreate = () => {
+const CommunityCreate = ({children}: any) => {
+    const [recoilCategory, setRecoilCategory] = useRecoilState(recoilCategoryItem);
+
+    
+    
     // select.tsx에서 전달해야함
     const [category, setCategory] = useState("");
     const [name, setName] = useState("");
@@ -16,10 +22,10 @@ const CommunityCreate = () => {
 
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
-
+        
         try {
-            const res = await axios.post("/communities", { category, name, title, description });
-
+            const res = await axios.post("/communities", { recoilCategory, name, title, description });
+            console.log(recoilCategory);
             router.push(`/c/${res.data.name}`);
         } catch (error: any) {
             console.log(error);
@@ -36,17 +42,10 @@ const CommunityCreate = () => {
                 <hr />
                 <form onSubmit={handleSubmit}>
                     <div className="my-6">
-                        <p className="font-medium">Name</p>
-                        <p className="mb-2 text-xs text-gray-400">
-                            커뮤니티 이름은 변경할 수 없습니다.
-                        </p>
+                        <p className="font-medium">Category</p>
+                        <div>{recoilCategory}</div>
                         { /* select컴포넌트에서 클릭한 카테고리 렌더링 */ }
-                        <InputGroup
-                            placeholder="카테고리"
-                            value={category}
-                            setValue={setCategory}
-                            error={errors.name}
-                        />
+                        
                     </div>
                     <div className="my-6">
                         <p className="font-medium">Name</p>
