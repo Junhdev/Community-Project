@@ -32,7 +32,8 @@ const PostCard = ({
     mutate,
     communityMutate
 }: PostCardProps) => {
-    const router = useRouter()
+    const router = useRouter();
+    // 메인페이지와의 분기처리 해주기
     const isInCommunityPage = router.pathname === "/c/[community]"
 
     const { authenticated } = useAuthState();
@@ -80,13 +81,13 @@ const PostCard = ({
                     }
                 </div>
             </div>
-            {/* 포스트 데이터 부분 */}
+            {/* 메인 페이지 포스트 데이터 부분 */}
             <div className="w-full p-2">
                 <div className='flex items-center'>
                     {!isInCommunityPage && (
                         <div className='flex items-center'>
                             <Link href={`/c/${communityname}`}>
-                                <a>
+                                <span>
                                     <Image
                                         src={community!.imageUrl}
                                         alt="community"
@@ -94,12 +95,12 @@ const PostCard = ({
                                         width={12}
                                         height={12}
                                     />
-                                </a>
+                                </span>
                             </Link>
                             <Link href={`/r/${communityname}`}>
-                                <a className="ml-2 text-xs font-bold cursor-pointer hover:underline">
+                                <span className="ml-2 text-xs font-bold cursor-pointer hover:underline">
                                     /r/{communityname}
-                                </a>
+                                </span>
                             </Link>
                             <span className="mx-1 text-xs text-gray-400">•</span>
                         </div>
@@ -108,26 +109,26 @@ const PostCard = ({
                     <p className="text-xs text-gray-400">
                         Posted by
                         <Link href={`/u/${username}`}>
-                            <a className="mx-1 hover:underline">/u/{username}</a>
+                            <span className="mx-1 hover:underline">/u/{username}</span>
                         </Link>
                         <Link href={url}>
-                            <a className='mx-1 hover:underline'>
+                            <span className='mx-1 hover:underline'>
                                 {dayjs(createdAt).format('YYYY-MM-DD HH:mm')}
-                            </a>
+                            </span>
                         </Link>
                     </p>
                 </div>
 
                 <Link href={url}>
-                    <a className="my-1 text-lg font-medium">{title}</a>
+                    <span className="my-1 text-lg font-medium">{title}</span>
                 </Link>
                 {body && <p className="my-1 text-sm">{body}</p>}
                 <div className="flex">
                     <Link href={url}>
-                        <a>
+                        <span>
                             <i className="mr-1 fas fa-comment-alt fa-xs"></i>
                             <span>{commentCount}</span>
-                        </a>
+                        </span>
                     </Link>
 
                 </div>
