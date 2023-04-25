@@ -22,11 +22,11 @@ const like = async (req:Request, res:Response) => {
         let comment: Comment;
 
             if(commentIdentifier) {
-                // 댓글 식별자가 있는 경우 댓글로 vote 찾기
+                // 댓글 식별자가 있는 경우 댓글로 like 찾기
                 comment = await Comment.findOneByOrFail({ identifier: commentIdentifier});
                 like = await Like.findOneBy({ username: user.username, commentId: comment.id});
             } else {
-                // 포스트로 vote 찾기
+                // 게시글에 대해 post로 like 찾기
                 like = await Like.findOneBy({ username: user.username, postId: post.id});
             }
 
@@ -38,13 +38,16 @@ const like = async (req:Request, res:Response) => {
                 like.user = user;
                 like.value = value;
 
-                // 게시물에 속한 like or 댓글에 속한 like
+                // 댓글에 속한 like
                 if(comment) like.comment = comment
+                //게시물에 속한 like
                 else like.post = post;
                 await like.save();
-            } else if(value === 0) {
+            } // like 버튼을 한번 더 눌렀을 때 초기화 <=> 테이블에서 like 인스턴스 제거
+              else if(value === 0) {
                 like.remove();
-            } else if ( like.value !== value) {
+            } // value 업데이트
+              else if ( like.value !== value) {
                 like.value = value;
                 await like.save();
             }
