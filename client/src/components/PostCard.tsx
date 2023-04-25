@@ -11,7 +11,7 @@ import { Post } from '../types'
 interface PostCardProps {
     post: Post
     communityMutate?: () => void
-    mutate?: () => void
+    mainMutate?: () => void
 }
 
 const PostCard = ({
@@ -29,23 +29,26 @@ const PostCard = ({
         username,  
         community
     },
-    mutate,
+    mainMutate,
     communityMutate
 }: PostCardProps) => {
     const router = useRouter();
     // 메인페이지와의 분기처리 해주기
-    const isInCommunityPage = router.pathname === "/c/[community]"
+    const isInCommunityPage = router.pathname === "/[community]"
 
     const { authenticated } = useAuthState();
 
     const like = async (value: number) => {
         if (!authenticated) router.push("/login");
 
-        if (value === userLike) value = 0;
+        // 좋아요 or 싫어요 버튼을 한번 더 누르면 reset
+        if (value === userLike) {
+            value = 0
+        };
 
         try {
-            await axios.post("/votes", { identifier, slug, value });
-            if (mutate) mutate();
+            await axios.post("/likes", { identifier, slug, value });
+            if (mainMutate) mainMutate();
             if (communityMutate) communityMutate();
         } catch (error) {
             console.log(error);
@@ -86,7 +89,7 @@ const PostCard = ({
                 <div className='flex items-center'>
                     {!isInCommunityPage && (
                         <div className='flex items-center'>
-                            <Link href={`/c/${communityname}`}>
+                            <Link href={`/${communityname}`}>
                                 <span>
                                     <Image
                                         src={community!.imageUrl}
@@ -97,9 +100,9 @@ const PostCard = ({
                                     />
                                 </span>
                             </Link>
-                            <Link href={`/r/${communityname}`}>
+                            <Link href={`/${communityname}`}>
                                 <span className="ml-2 text-xs font-bold cursor-pointer hover:underline">
-                                    /r/{communityname}
+                                    {communityname}
                                 </span>
                             </Link>
                             <span className="mx-1 text-xs text-gray-400">•</span>
@@ -108,8 +111,8 @@ const PostCard = ({
 
                     <p className="text-xs text-gray-400">
                         Posted by
-                        <Link href={`/u/${username}`}>
-                            <span className="mx-1 hover:underline">/u/{username}</span>
+                        <Link href={`/${username}`}>
+                            <span className="mx-1 hover:underline">{username}</span>
                         </Link>
                         <Link href={url}>
                             <span className='mx-1 hover:underline'>
