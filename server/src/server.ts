@@ -7,6 +7,7 @@ import communityRoutes from './routes/communities';
 import postRoutes from './routes/posts';
 import likeRoutes from './routes/likes';
 import userRoutes from './routes/users';
+import friendRoutes from './routes/friends';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 
@@ -37,6 +38,7 @@ app.use("/api/communities", communityRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/likes", likeRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/friends", friendRoutes);
 
 // static파일을 public 파일 안에 있고 브라우저로 접근할 때 제공할 수 있게 해줌
 app.use(express.static("public"));
