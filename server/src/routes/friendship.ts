@@ -86,18 +86,21 @@ const acceptFriendRequest = async(req: Request, res: Response) => {
   const friend_id = req.params.sender_id;
   try {
     
-    const friendRequest = await FriendShip.find({
+    const friendRequest = await FriendShip.findOneBy({
     
       
-      where: {
+     
           
-          receiver_id: user.id
-        }
+          
+            receiver_id: user.id,
+            accepted: false
+        
       
     })
-    for(let i=0; i<friendRequest.length; i++){
+    
       //let { sender_id, receiver_id, accepted } = friendRequest[i];
-      friendRequest[i].accepted = true;
+      friendRequest.accepted = true;
+      await FriendShip.save(friendRequest);
       return res.status(200).json({ message: '친구가 되었어요.' });
     }
     
@@ -108,7 +111,7 @@ const acceptFriendRequest = async(req: Request, res: Response) => {
 
     //if (affectedRows === 0) return res.status(404).json({ message: '존재하지 않는 친구 요청이에요.' });
     
-  } catch {
+  catch {
     return res.status(500).json({ message: '서버 에러가 발생했어요.' });
   }
 };
