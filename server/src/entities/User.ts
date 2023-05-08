@@ -45,7 +45,7 @@ export class User extends BaseEntity {
     likes: Like[];
 
      /* 1명의 User가 여러명과 친구관계를 맺을 수 있음 */
-    @OneToMany(() => FriendShip, (friendship) => friendship.user)
+    @OneToMany(() => FriendShip, (friendship) => friendship.user_id)
     friendship: FriendShip[];
 
     @OneToMany(() => Alarm, (alarm) => alarm.user)
