@@ -98,10 +98,12 @@ const acceptFriendRequest = async(req: Request, res: Response) => {
       
     })
     
-      //let { sender_id, receiver_id, accepted } = friendRequest[i];
+      // friendRequest는 object
       friendRequest.accepted = true;
       await FriendShip.save(friendRequest);
       return res.status(200).json({ message: '친구가 되었어요.' });
+      
+
     }
     
    
@@ -176,7 +178,7 @@ try {
   
   const friendRequest = await FriendShip.find({
     
-      
+    // accepted: false 해주어야 수락/거부 과정 진행된 친구들이 프론트에서 렌더링 안된다.
     where: {
         
         receiver_id: user.id
@@ -188,12 +190,15 @@ try {
   if (accepted === false) {
     friend_id = sender_id;
   }
-
+  if(friendRequest.length === 0){
+    return res.status(404).json({ message: '전달받은 친구요청이 없어요' })
+  }
+  // id가 friend_id인 유저 찾기
   const friends = await User.find({
     
     
     where: {
-      id: sender_id
+      id: friend_id
     }
    
   })
