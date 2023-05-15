@@ -13,63 +13,71 @@ import FriendShip from "../entities/FriendShip";
 const sendFriendRequest = async(req: Request, res: Response) => {
   const user: User = res.locals.user;
  
-  const friend_id = req.params.receiver_id; 
+  let friend_id = req.params.receiver_id; 
 
   if (user.id === parseInt(friend_id)) return res.status(409).json({ message: '스스로에게 친구 요청을 할 수 없어요.' });
-
+/*
   const notExistUser = await AppDataSource.createQueryBuilder()
     .select("id")
     .from(User,"u")
     .execute()
 
-  if (notExistUser.length === 0) return res.status(404).json({ message: '존재하지 않는 사용자예요.' });
+  if (notExistUser.length === 0) return res.status(404).json({ message: '존재하지 않는 사용자예요.' }); */
 
   try {
+    // 1. 나에게 요청을 보낸 적 없는 친구에게 내가 요청을 보내는 상황 혹은 
+    // 2. 이미 나에게 요청을 보낸 친구에게 다시 요청을 보내는 상황
     const friendRequest = await FriendShip.find({
     
-      
-      where: {
-       
-          receiver_id: parseInt(friend_id)
+      where: [{    
+          receiver_id: parseInt(friend_id), 
+          sender_id: user.id
+        },{
+          receiver_id: user.id, 
+          sender_id: parseInt(friend_id)
         }
-      
+      ]
     })
-    const { sender_id, receiver_id, accepted } = friendRequest[0];
-    if (receiver_id === parseInt(friend_id) && user.id === sender_id) return res.status(409).json({ message: '이미 친구 요청을 보냈어요.' });
     
     // friendRequest의 type은 array
-    if (friendRequest.length !== 0) {
-      /*
-      await AppDataSource.createQueryBuilder()
-    .insert()
-    .into(FriendShip)
-    .values({sender_idx?: ,  })
-    .execute()
-    */
-
-    
-        
+    if (friendRequest.length === 0) {
+   
+    // 엔티티에 등록(인스턴스 생성)!!!
     const friendship = new FriendShip();
     friendship.sender_id = user.id;
     // friend_id는 params에서 받아온 것이기 때문에 type: string
     friendship.receiver_id = parseInt(friend_id);
     friendship.accepted= false;
-    friendship.user_id = parseInt(friend_id);
+    // 친구요청에 대한 정보를 렌더링해야하기 때문에 본인의 id를 넣어주어야 한다.
+    friendship.user_id = user.id;
    
-    
     // database에 저장
     await friendship.save();
-    
-      return res.status(201).json({ message: '친구 요청을 보냈어요.' });
+    return res.status(201).json({ message: '친구 요청을 보냈어요.' });
     }
-
+    // 이 구문을 if문보다 먼저 선언해버리면 length가 0일때 error이기 떄문에 if문이 끝나고 선언해주어야 한다.
+    // 친구요청 한개에 대한 정보이므로 length는 1이다.
+    const { sender_id, receiver_id, accepted } = friendRequest[0];
     // friendRequest [{ sender_id: user_id, receiver_id: friend_id, accepted: true/false }]
-    //const { sender_id, receiver_id, accepted } = friendRequest[0];
-    //if (receiver_id === parseInt(friend_id)) return res.status(409).json({ message: '이미 친구 요청을 보냈어요.' });
-    if (accepted) return res.status(409).json({ message: '이미 친구예요.' });
-   
+    // 내가 이미 이전에 요청을 보냈던 친구에게 다시 요청을 보낼때
+    if (friendRequest && sender_id === user.id && receiver_id === parseInt(friend_id) && accepted === false) return res.status(409).json({ message: '이미 친구 요청을 보냈어요.' });
+    if (friendRequest && accepted === true) return res.status(409).json({ message: '이미 친구예요.' });
+    // 이미 나에게 요청을 보냈던 친구에게 요청을 보낼때
+    if (friendRequest && sender_id === parseInt(friend_id) && receiver_id === user.id && accepted === false) {
+      
+        const alFriendRequest = await FriendShip.findOneBy(
+          {
+                sender_id : parseInt(friend_id),
+                receiver_id: user.id,
+                accepted: false
+          }
+        )
+      
+        alFriendRequest.accepted = true;
+        await FriendShip.save(alFriendRequest);
+        return res.status(409).json({ message: '이미 나에게 친구 요청을 보낸 사용자예요. 자동으로 친구가 되었어요.' });
+    }
     
-    return res.status(200).json({ message: '이미 나에게 친구 요청을 보낸 사용자예요. 자동으로 친구가 되었어요.' });
   } catch {
     return res.status(500).json({ message: '서버 에러가 발생했어요.' });
   }
@@ -86,20 +94,17 @@ const acceptFriendRequest = async(req: Request, res: Response) => {
   const friend_id = req.params.sender_id;
   try {
     
-    const friendRequest = await FriendShip.findOneBy({
-    
-      
-     
-          
-          
+    const friendRequest = await FriendShip.findOneBy(
+    {
             receiver_id: user.id,
             accepted: false
-        
-      
-    })
+    }
+    )
     
       // friendRequest는 object
+      // 수락버튼 누르면 true로 변경
       friendRequest.accepted = true;
+      // 새로운 인스턴스가 생성되는 것이 아니라 업데이트 시켜준다
       await FriendShip.save(friendRequest);
       return res.status(200).json({ message: '친구가 되었어요.' });
       
@@ -135,6 +140,65 @@ const removeFriend =  async(req: Request, res: Response) => {
   }
 
 
+  const getFriendsRequest = async(req: Request, res: Response) => {
+    const user: User = res.locals.user;
+   
+  try {
+    
+    const friendRequest = await FriendShip.find({
+      
+      // accepted: false 해주어야 수락/거부 과정 진행된 친구들이 프론트에서 렌더링 안된다.
+      where: {
+          
+          receiver_id: user.id, accepted: false
+        }
+      
+    })
+  
+    // ★★★동기적 프로그래밍으로 인해 코드 위치 중요
+    if(friendRequest.length === 0){
+      return res.status(404).json({ message: '전달받은 친구요청이 없어요' })
+    }
+    // else문
+    // friendRequest[0] 만 받으면 첫번째 요청만 프론트에 전송해주기 때문에 X
+  
+    
+    // 친구요청을 보낸 친구들의 정보를 프론트에서 렌더링하기 위해
+    // friendship 엔티티와 join을 해서 받은사람이 본인(보낸사람은 당연히 다른 유저들)이고 아직 수락하지 않았을때의 유저 정보 프론트에 전송
+    const friends = await User.find({
+      relations: {
+        friendship: true
+      }
+      ,
+      where: {
+        // 받은 유저가 본인일때
+        friendship: {
+          receiver_id: user.id,
+          accepted: false
+        }
+     
+    }})
+      return res.json(friends);
+    
+    /*
+    const friends = await AppDataSource.createQueryBuilder()
+    .select(
+      `u.id, u.userID , u.username, u.profileImg`
+      )
+  .from(User, "u")
+  .leftJoin(FriendShip, "f", `f.receiver_id = u.id`)
+  .where("accepted = false")
+  .execute()
+  return res.json(friends);
+    */
+  
+  } catch {
+    return res.status(500).json({ message: '서버 에러가 발생했어요.' });
+  }
+  };
+  
+  
+
 // get보다 post/put 핸들러 먼저 생성하기(친구요청 관련 핸들러 먼저 생성 후 친구 목록 불러오기 핸들러 생성해주어야함)
 // 위에서 친구요청이 진행되었으므로 sender_id와 receiver_id에 이미 해당 유저의 index가 들어있다.
 // 그러므로 친구정보를 불러오기 위해서는 join을 해서 친구의 id(인덱스), 친구의 아이디, 이름 등을 선택하여 프론트에 보낼 수 있다.
@@ -144,7 +208,8 @@ const getFriendsList = async(req: Request, res: Response) => {
   try {
     const friendsList = await FriendShip.find({
     
-      
+      // {,} >> & 조건 
+      // [,] >> or 조건
       where: [
         { receiver_id: user.id, accepted: true },
         { sender_id: user.id, accepted: true }
@@ -171,56 +236,7 @@ const getFriendsList = async(req: Request, res: Response) => {
   }
 }
 
-const getFriendsRequest = async(req: Request, res: Response) => {
-  const user: User = res.locals.user;
- 
-try {
-  
-  const friendRequest = await FriendShip.find({
-    
-    // accepted: false 해주어야 수락/거부 과정 진행된 친구들이 프론트에서 렌더링 안된다.
-    where: {
-        
-        receiver_id: user.id
-      }
-    
-  })
-  const { sender_id, receiver_id, accepted } = friendRequest[0];
-  let friend_id;
-  if (accepted === false) {
-    friend_id = sender_id;
-  }
-  if(friendRequest.length === 0){
-    return res.status(404).json({ message: '전달받은 친구요청이 없어요' })
-  }
-  // id가 friend_id인 유저 찾기
-  const friends = await User.find({
-    
-    
-    where: {
-      id: friend_id
-    }
-   
-  })
-    return res.json(friends);
-  
-  /*
-  const friends = await AppDataSource.createQueryBuilder()
-  .select(
-    `u.id, u.userID , u.username, u.profileImg`
-    )
-.from(User, "u")
-.leftJoin(FriendShip, "f", `f.receiver_id = u.id`)
-.where("accepted = false")
-.execute()
-return res.json(friends);
-  */
 
-} catch {
-  return res.status(500).json({ message: '서버 에러가 발생했어요.' });
-}
-};
-  
 
     
 
@@ -230,7 +246,7 @@ const router = Router();
 
 router.put('/send/:receiver_id', userMiddleware, sendFriendRequest);
 router.patch('/accept/:sender_id', userMiddleware, acceptFriendRequest); 
-router.delete('/:friend_id', userMiddleware, removeFriend);
+router.delete('/accept/:friend_id', userMiddleware, removeFriend);
 router.get('/', userMiddleware, getFriendsList);
 router.get('/request', userMiddleware, getFriendsRequest);
 export default router;
