@@ -70,9 +70,12 @@ const FriendPage = () => {
    
 
     const handleFriendRequests = (action: AxiosStatic) => {
+      // id는 친구유저의 index
       return async function (id: number){
       try {
+        
           const res = await action(`/friendship/accept/${id}`);
+          // 거부시 핸들러 설정해주기
           alert(res.data.message);
       } catch (error) {
           console.log(error);
@@ -132,6 +135,7 @@ const FriendPage = () => {
     
 export default FriendPage;
 
+// 수락하기 거부하기 선택
 const ReceivedFriendRequest = ({ id, userID, username, profileImg, handleFriendRequests }: ReceivedFriendRequestProps) => {
   
   const acceptFriendRequest = handleFriendRequests(FRIEND_REQUEST_ACTION.ACCEPT);
