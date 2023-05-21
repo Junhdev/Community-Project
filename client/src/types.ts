@@ -1,6 +1,9 @@
 export interface User {
+    id: number;
+    userID: string;
     username: string;
     email: string;
+    profileImg: string;
     createdAt: string;
     updatedAt: string;
   }
@@ -50,7 +53,26 @@ export interface User {
     likeScore: number;
   }
   
-  export interface Friend {
-    username: string;
-    profileImg: string;
+  export interface FriendShip {
+    sender_id: number;
+    receiver_id: number;
+    accepted: boolean;
+    createdAt: string;
+    updatedAt: string;
+    user_id: string;
   }
+
+
+  export interface ModalProps {
+    component: JSX.Element;
+    zIndex: number;
+    top?: string;
+    bottom?: string;
+    left?: string;
+    right?: string;
+    transform?: string;
+    dimmedBorderRadius?: string;
+    handleDimmedClick: React.MouseEventHandler;
+  }
+
+  type FreindRequestAction = 'accept' | 'deny';
