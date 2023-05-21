@@ -26,7 +26,7 @@ const CommunityCreate = ({children}: any) => {
         try {
             const res = await axios.post("/communities", { recoilCategory, name, title, description });
             console.log(recoilCategory);
-            router.push(`/c/${res.data.name}`);
+            router.push(`/${res.data.name}`);
         } catch (error: any) {
             console.log(error);
             setErrors(error.response.data);
