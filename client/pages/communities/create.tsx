@@ -3,10 +3,191 @@ import axios from 'axios';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import React, { FormEvent, useState } from 'react'
-import { useRecoilState } from 'recoil';
-import { recoilCategoryItem } from '@/src/atoms/categoryAtom';
 
 
+
+type MeetingCreateValue = {
+  title: string
+}
+
+const [name, setName] = useState("");
+const [date, setDate] = useState("");
+const [location, setLocation] = useState("");
+const [errors, setErrors] = useState<any>({});
+
+
+const MeetingCreate = () => {
+  const createMeetingSchema = Yup.object().shape({
+    title: Yup.string().required('제목을 입력해 주세요.'),
+  })
+  let router = useRouter()
+  let {
+    query: { id },
+  } = router
+
+  /* 태그로 대신
+  const [keyword, setKeyword] = useState<SearchKeywordValue>()
+  const [category, setCategory] = useState()
+  */
+
+/*
+  const handleCreateMeeting = (values: MeetingCreateValue) => {
+    /* 지도 api 가져오기
+    if (!keyword?.keyword) {
+      openToast('지도에서 맛집을 선택해 주세요')
+      const keywordInput = document.getElementById('keyword')
+      keywordInput?.classList.add('input-error')
+      return
+    }
+    
+    if (!category) {
+      openToast('카테고리를 선택해 주세요')
+      return
+    }
+    mutate({ ...values, category, crew: id })
+  }
+  */
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    
+    try {
+        const res = await axios.post("/meetings", { name, date, location });
+        
+        router.push(`/${res.data.name}`);
+    } catch (error: any) {
+        console.log(error);
+        setErrors(error.response.data);
+    }
+}
+
+  /* react-query 사용 
+  const { mutate, isLoading } = useMutationHandleError(
+    createLunch,
+    {
+      onSuccess: (data: ApiResponseData<Lunch>) => {
+        const { message, result } = data
+        openToast(message || '오늘의 메뉴를 등록했습니다.')
+        router.push(`/meeting/${result.meeting}`)
+      },
+    },
+    '오늘의 메뉴를 등록할 수 없습니다.',
+  )
+    */
+
+  return (
+    <div>
+      <WhiteRoundedCard>
+        <div className="text-xl font-bold">약속 만들기</div>
+        <Stepper>
+          <Stepper.Step>
+            <div>
+              <p className="mb-4 mt-1 text-sm">
+                친구들과 만들고 싶은 약속을 생성하세요
+              </p>
+              {/*<WrappedStepperContextSearchKeywordMap setKeyword={setKeyword} /> */}
+            </div>
+          </Stepper.Step>
+          <Stepper.Step>
+            <div>
+             
+              {/*<p className="mb-2 font-bold">{keyword?.keyword}</p> */}
+              <form
+                onSubmit={handleSubmit}
+                options={{
+                  resolver: yupResolver(createMeetingSchema),
+                  mode: 'onBlur',
+                }}>
+              
+                <InputGroup
+                  
+                  placeholder="약속명"
+                  value={name}
+                  setValue={setName}
+                  error={errors.name}
+              
+                />
+                <InputGroup
+                  
+                  placeholder="약속 날짜 및 시간"
+                  value={date}
+                  setValue={setDate}
+                  error={errors.date}
+              
+                />
+                <InputGroup
+                  
+                  placeholder="약속 위치"
+                  value={location}
+                  setValue={setLocation}
+                  error={errors.location}
+              
+                />
+
+                {/*<SearchCategory setCategory={setCategory} category={category} />*/}
+                <button
+                    className="px-4 py-1 text-sm font-semibold text-white bg-gray-400 border rounded"
+                >
+                    약속 정하기
+                </button>
+              </form>
+            </div>
+          </Stepper.Step>
+          <Stepper.Button
+            atctionType="prev"
+            text="다시 선택하기"
+            color="blue"
+            className="mt-4"
+          />
+          {/*}
+          {!!keyword?.isSetted && (
+            <Stepper.Button
+              atctionType="next"
+              text="다음"
+              color="blue"
+              className="ml-2 mt-4"
+            />
+          )}
+          */}
+        </Stepper>
+      </WhiteRoundedCard>
+    </div>
+  )
+}
+
+export default MeetingCreate;
+
+
+export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+    try {
+        const cookie = req.headers.cookie;
+        // 쿠키가 없다면 에러를 보내기
+        if (!cookie) throw new Error("Missing auth token cookie");
+
+        // 쿠키가 있다면 그 쿠키를 이용해서 백엔드에서 인증 처리하기 
+        await axios.get(`${process.env.NEXT_PUBLIC_SERVER_BASE_URL}/api/auth/me`,
+            { headers: { cookie } })
+        return { props: {} }
+
+    } catch (error) {
+        // 백엔드에서 요청에서 던져준 쿠키를 이용해 인증 처리할 때 에러가 나면 /login 페이지로 이동
+        // 307 - temporary redirect
+        res.writeHead(307, { Location: "/login" }).end()
+
+        return { props: {} };
+    }
+}
+
+
+
+
+
+
+
+
+
+
+{/*
 const CommunityCreate = ({children}: any) => {
     const [recoilCategory, setRecoilCategory] = useRecoilState(recoilCategoryItem);
 
@@ -34,6 +215,7 @@ const CommunityCreate = ({children}: any) => {
     }
     
     return (
+    
         <div className="flex flex-col justify-center pt-16">
             <div className="w-10/12 p-4 mx-auto bg-white rounded md:w-96">
                 <h1 className="mb-2 text-lg font-medium">
@@ -44,7 +226,7 @@ const CommunityCreate = ({children}: any) => {
                     <div className="my-6">
                         <p className="font-medium">Category</p>
                         <div>{recoilCategory}</div>
-                        { /* select컴포넌트에서 클릭한 카테고리 렌더링 */ }
+                        { /* select컴포넌트에서 클릭한 카테고리 렌더링  }
                         
                     </div>
                     <div className="my-6">
@@ -52,7 +234,7 @@ const CommunityCreate = ({children}: any) => {
                         <p className="mb-2 text-xs text-gray-400">
                             커뮤니티 이름은 변경할 수 없습니다.
                         </p>
-                        { /* select컴포넌트에서 클릭한 카테고리 렌더링 */ }
+                        { /* select컴포넌트에서 클릭한 카테고리 렌더링  }
                         <InputGroup
                             placeholder="이름"
                             value={name}
@@ -98,23 +280,5 @@ const CommunityCreate = ({children}: any) => {
 }
 
 export default CommunityCreate;
+*/}
 
-export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-    try {
-        const cookie = req.headers.cookie;
-        // 쿠키가 없다면 에러를 보내기
-        if (!cookie) throw new Error("Missing auth token cookie");
-
-        // 쿠키가 있다면 그 쿠키를 이용해서 백엔드에서 인증 처리하기 
-        await axios.get(`${process.env.NEXT_PUBLIC_SERVER_BASE_URL}/api/auth/me`,
-            { headers: { cookie } })
-        return { props: {} }
-
-    } catch (error) {
-        // 백엔드에서 요청에서 던져준 쿠키를 이용해 인증 처리할 때 에러가 나면 /login 페이지로 이동
-        // 307 - temporary redirect
-        res.writeHead(307, { Location: "/login" }).end()
-
-        return { props: {} };
-    }
-}
