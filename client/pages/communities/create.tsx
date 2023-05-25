@@ -3,6 +3,9 @@ import axios from 'axios';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import React, { FormEvent, useState } from 'react'
+import { FieldValues, useFieldArray, useForm } from 'react-hook-form';
+
+import * as yup from 'yup';
 
 
 
@@ -10,21 +13,102 @@ type MeetingCreateValue = {
   title: string
 }
 
-const [name, setName] = useState("");
+const [title, setTitle] = useState("");
 const [date, setDate] = useState("");
 const [location, setLocation] = useState("");
 const [errors, setErrors] = useState<any>({});
 
+interface Props {
+    handleCloseButtonClick: () => void;
+    tagList: Tag[];
+    fetchTagList: () => Promise<void>;
+    currentMeeting: Meeting | null;
+  }
+  
+  const formatDate = (date: Date) => {
+    const [y, m, d] = date
+      .toLocaleDateString()
+      .split('.')
+      .map((str) => str.trim().padStart(2, '0'));
+    return [y.padStart(4, '0'), m.padStart(2, '0'), d.padStart(2, '0')].join('-');
+  };
+  
+  const isSameOrAfter = (time1: string, time2: string) => {
+    return time1 >= time2;
+  };
+  
 
-const MeetingCreate = () => {
-  const createMeetingSchema = Yup.object().shape({
-    title: Yup.string().required('제목을 입력해 주세요.'),
+const MeetingCreate = ({ handleCloseButtonClick, tagList, fetchTagList, currentMeeting }: Props) => {
+  const createMeetingSchema = yup.object().shape({
+    title: yup.string().required('제목을 입력해 주세요.'),
   })
   let router = useRouter()
   let {
     query: { id },
   } = router
 
+ 
+    const [tagId, setTagId] = useState<number | null>(currentMeeting ? currentMeeting.tagId : null);
+    const [locationObject, setLocationObject] = useState<Location | null>(currentMeeting && currentMeeting?.location !== null && currentMeeting?.location !== '' ? { location: currentMeeting!.location, lng: currentMeeting!.lng, lat: currentMeeting!.lat } : null); // { location, lng, lat }
+    
+   
+  
+    const { currentDate, getMonth, getDate } = useCurrentDate();
+  
+   
+   
+  
+    const schema = yup.object().shape({
+      title: yup.string().required(),
+      tagId: yup.number().required(),
+      startedAt: yup.string().required(),
+      endedAt: yup.string().when('startedAt', (startedAt) => {
+        return yup.string().test('e > s', '종료 시각은 시작 시각과 같거나 그 이후여야 해요.', (endedAt) => {
+          if (!endedAt) return false;
+          return isSameOrAfter(endedAt, startedAt);
+        });
+      }),
+      importance: yup.number().required(),
+      isPublic: yup.bool(),
+      location: yup.string().nullable(),
+      lat: yup
+        .number()
+        .transform((value) => (isNaN(value) ? undefined : value))
+        .nullable(),
+      lng: yup
+        .number()
+        .transform((value) => (isNaN(value) ? undefined : value))
+        .nullable(),
+      content: yup.string(),
+    });
+
+    const {
+      control,
+      register,
+      handleSubmit,
+      setValue,
+      formState: { errors },
+    } = useForm({
+      resolver: yupResolver(schema),
+    });
+  
+    const { replace } = useFieldArray({
+      control,
+      title: 'labels',
+    });
+  
+    type ColumnTitle = '약속명' | '태그' | '시간' | '위치' | '메모';
+  
+    const Row = ({ title, content }: { title: ColumnTitle; content: JSX.Element }) => {
+      return (
+        <tr>
+          <td>{title}</td>
+          <td>{content}</td>
+        </tr>
+      );
+    };
+
+    
   /* 태그로 대신
   const [keyword, setKeyword] = useState<SearchKeywordValue>()
   const [category, setCategory] = useState()
@@ -52,9 +136,9 @@ const MeetingCreate = () => {
     event.preventDefault();
     
     try {
-        const res = await axios.post("/meetings", { name, date, location });
+        const res = await axios.post("/meetings", { title, date, location });
         
-        router.push(`/${res.data.name}`);
+        router.push(`/${res.data.title}`);
     } catch (error: any) {
         console.log(error);
         setErrors(error.response.data);
@@ -74,24 +158,61 @@ const MeetingCreate = () => {
     '오늘의 메뉴를 등록할 수 없습니다.',
   )
     */
-
+  const [isTagInputFocused, setIsTagInputFocused] = useState(false);
   return (
-    <div>
+    
+        <S.ModalContainer>
+      <S.CloseButton onClick={handleCloseButtonClick} />
+      <S.Date>{`• ${getMonth() + 1}.${getDate()} •`}</S.Date>
+      <S.MeetingForm onSubmit={currentMeeting ? handleSubmit(editMeeting) : handleSubmit(createMeeting)}>
+        <S.FormTable>
+          <tbody>
+            <Row title="약속명" content={<S.InputBar defaultValue={currentMeeting ? currentMeeting.title : ''} {...register('title')} />} />
+            <input type="number" {...register('tagIdx')} hidden={true} />
+            <Row title="태그" content={<TagInput tagIdx={tagIdx} setTagIdx={setTagIdx} tagList={tagList} fetchTagList={fetchTagList} isTagInputFocused={isTagInputFocused} setIsTagInputFocused={setIsTagInputFocused} />} />
+            <Row
+              title="시간"
+              content={
+                <>
+                  <S.InputTimeBar type="time" defaultValue={currentMeeting ? currentMeeting.startedAt : ''} {...register('startedAt')} />
+                  {' ~ '}
+                  <S.InputTimeBar type="time" defaultValue={currentMeeting ? currentMeeting.endedAt : ''} {...register('endedAt')} />
+                </>
+              }
+            />
+            
+            
+              <input {...register('lat')} hidden={true} />
+              <input {...register('lng')} hidden={true} />
+              <input {...register('location')} hidden={true} />
+              <Row title="위치" content={<LocationSearchInput locationObject={locationObject} setLocationObject={setLocationObject} />} />
+              <Row title="메모" content={<S.InputArea defaultValue={currentMeeting ? currentMeeting.content : ''} {...register('content')} />} />
+            </tbody>
+          </S.FormTable>
+       
+        <S.SubmitButton onClick={setValues}>{currentMeeting ? 'EDIT Meeting' : 'NEW Meeting!'}</S.SubmitButton>
+      </S.MeetingForm>
+      </S.ModalContainer>
+  )}
+
+  export default MeetingCreate;
+
+{/*
       <WhiteRoundedCard>
-        <div className="text-xl font-bold">약속 만들기</div>
+        <div classtitle="text-xl font-bold">약속 만들기</div>
         <Stepper>
           <Stepper.Step>
             <div>
-              <p className="mb-4 mt-1 text-sm">
+              <p classtitle="mb-4 mt-1 text-sm">
                 친구들과 만들고 싶은 약속을 생성하세요
               </p>
-              {/*<WrappedStepperContextSearchKeywordMap setKeyword={setKeyword} /> */}
+              {/*<WrappedStepperContextSearchKeywordMap setKeyword={setKeyword} /> }
             </div>
           </Stepper.Step>
           <Stepper.Step>
             <div>
              
-              {/*<p className="mb-2 font-bold">{keyword?.keyword}</p> */}
+              {/*<p classtitle="mb-2 font-bold">{keyword?.keyword}</p> }
               <form
                 onSubmit={handleSubmit}
                 options={{
@@ -102,9 +223,9 @@ const MeetingCreate = () => {
                 <InputGroup
                   
                   placeholder="약속명"
-                  value={name}
-                  setValue={setName}
-                  error={errors.name}
+                  value={title}
+                  setValue={settitle}
+                  error={errors.title}
               
                 />
                 <InputGroup
@@ -124,9 +245,9 @@ const MeetingCreate = () => {
               
                 />
 
-                {/*<SearchCategory setCategory={setCategory} category={category} />*/}
+                {/*<SearchCategory setCategory={setCategory} category={category} />}
                 <button
-                    className="px-4 py-1 text-sm font-semibold text-white bg-gray-400 border rounded"
+                    classtitle="px-4 py-1 text-sm font-semibold text-white bg-gray-400 border rounded"
                 >
                     약속 정하기
                 </button>
@@ -137,7 +258,7 @@ const MeetingCreate = () => {
             atctionType="prev"
             text="다시 선택하기"
             color="blue"
-            className="mt-4"
+            classtitle="mt-4"
           />
           {/*}
           {!!keyword?.isSetted && (
@@ -145,17 +266,16 @@ const MeetingCreate = () => {
               atctionType="next"
               text="다음"
               color="blue"
-              className="ml-2 mt-4"
+              classtitle="ml-2 mt-4"
             />
           )}
-          */}
+          }
         </Stepper>
       </WhiteRoundedCard>
     </div>
   )
-}
+}*/}
 
-export default MeetingCreate;
 
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
@@ -195,7 +315,7 @@ const CommunityCreate = ({children}: any) => {
     
     // select.tsx에서 전달해야함
     const [category, setCategory] = useState("");
-    const [name, setName] = useState("");
+    const [title, settitle] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [errors, setErrors] = useState<any>({});
@@ -205,9 +325,9 @@ const CommunityCreate = ({children}: any) => {
         event.preventDefault();
         
         try {
-            const res = await axios.post("/communities", { recoilCategory, name, title, description });
+            const res = await axios.post("/communities", { recoilCategory, title, title, description });
             console.log(recoilCategory);
-            router.push(`/${res.data.name}`);
+            router.push(`/${res.data.title}`);
         } catch (error: any) {
             console.log(error);
             setErrors(error.response.data);
@@ -216,35 +336,35 @@ const CommunityCreate = ({children}: any) => {
     
     return (
     
-        <div className="flex flex-col justify-center pt-16">
-            <div className="w-10/12 p-4 mx-auto bg-white rounded md:w-96">
-                <h1 className="mb-2 text-lg font-medium">
+        <div classtitle="flex flex-col justify-center pt-16">
+            <div classtitle="w-10/12 p-4 mx-auto bg-white rounded md:w-96">
+                <h1 classtitle="mb-2 text-lg font-medium">
                     커뮤니티 만들기
                 </h1>
                 <hr />
                 <form onSubmit={handleSubmit}>
-                    <div className="my-6">
-                        <p className="font-medium">Category</p>
+                    <div classtitle="my-6">
+                        <p classtitle="font-medium">Category</p>
                         <div>{recoilCategory}</div>
                         { /* select컴포넌트에서 클릭한 카테고리 렌더링  }
                         
                     </div>
-                    <div className="my-6">
-                        <p className="font-medium">Name</p>
-                        <p className="mb-2 text-xs text-gray-400">
+                    <div classtitle="my-6">
+                        <p classtitle="font-medium">title</p>
+                        <p classtitle="mb-2 text-xs text-gray-400">
                             커뮤니티 이름은 변경할 수 없습니다.
                         </p>
                         { /* select컴포넌트에서 클릭한 카테고리 렌더링  }
                         <InputGroup
                             placeholder="이름"
-                            value={name}
-                            setValue={setName}
-                            error={errors.name}
+                            value={title}
+                            setValue={settitle}
+                            error={errors.title}
                         />
                     </div>
-                    <div className="my-6">
-                        <p className="font-medium">Title</p>
-                        <p className="mb-2 text-xs text-gray-400">
+                    <div classtitle="my-6">
+                        <p classtitle="font-medium">Title</p>
+                        <p classtitle="mb-2 text-xs text-gray-400">
                             주제를 나타냅니다. 언제든지 변경할 수 있습니다.
                         </p>
                         <InputGroup
@@ -254,9 +374,9 @@ const CommunityCreate = ({children}: any) => {
                             error={errors.title}
                         />
                     </div>
-                    <div className="my-6">
-                        <p className="font-medium">Description</p>
-                        <p className="mb-2 text-xs text-gray-400">
+                    <div classtitle="my-6">
+                        <p classtitle="font-medium">Description</p>
+                        <p classtitle="mb-2 text-xs text-gray-400">
                             해당 커뮤니티에 대한 설명입니다.
                         </p>
                         <InputGroup
@@ -266,9 +386,9 @@ const CommunityCreate = ({children}: any) => {
                             error={errors.description}
                         />
                     </div>
-                    <div className="flex justify-end">
+                    <div classtitle="flex justify-end">
                         <button
-                            className="px-4 py-1 text-sm font-semibold text-white bg-gray-400 border rounded"
+                            classtitle="px-4 py-1 text-sm font-semibold text-white bg-gray-400 border rounded"
                         >
                             커뮤니티 만들기
                         </button>
@@ -281,4 +401,9 @@ const CommunityCreate = ({children}: any) => {
 
 export default CommunityCreate;
 */}
+
+function yupResolver(schema: any)
+{
+    throw new Error('Function not implemented.');
+}
 
